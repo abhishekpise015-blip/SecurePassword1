@@ -28,7 +28,10 @@ logging.basicConfig(
 logger = logging.getLogger("SecurePass")
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
-app.config["JSON_SORT_KEYS"] = False
+if hasattr(app, "json"):
+    app.json.sort_keys = False
+else:
+    app.config["JSON_SORT_KEYS"] = False
 
 
 @app.after_request
@@ -51,7 +54,7 @@ def set_security_headers(response):
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data:; "
-        "connect-src 'self' http://127.0.0.1:5000 http://localhost:5000;"
+        "connect-src 'self' http://127.0.0.1:5000 http://localhost:5000 https://api.pwnedpasswords.com;"
     )
     response.headers["Content-Security-Policy"] = csp
 

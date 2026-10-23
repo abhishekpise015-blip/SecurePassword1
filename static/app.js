@@ -465,8 +465,6 @@
         }
       }
 
-      const isDemo = Boolean(data.is_demo);
-
       if (matched) {
         if (radarWrapper) radarWrapper.className = 'radar-wrapper matched';
         if (breachBadge) {

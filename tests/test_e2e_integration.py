@@ -12,14 +12,48 @@ Simulates the complete frontend-to-backend user flow against the live server:
 
 import hashlib
 import json
+import threading
+import time
 import unittest
 import urllib.error
 import urllib.request
+from werkzeug.serving import make_server
+
+from app import app
 
 BASE_URL = "http://127.0.0.1:5000"
 
 
 class TestLiveIntegration(unittest.TestCase):
+    _server = None
+    _server_thread = None
+
+    @classmethod
+    def setUpClass(cls):
+        """Ensure the test server is responding before running live tests."""
+        try:
+            with urllib.request.urlopen(f"{BASE_URL}/api/health", timeout=0.5):
+                return
+        except Exception:
+            pass
+
+        cls._server = make_server("127.0.0.1", 5000, app)
+        cls._server_thread = threading.Thread(target=cls._server.serve_forever, daemon=True)
+        cls._server_thread.start()
+
+        for _ in range(50):
+            try:
+                with urllib.request.urlopen(f"{BASE_URL}/api/health", timeout=0.2):
+                    break
+            except Exception:
+                time.sleep(0.1)
+
+    @classmethod
+    def tearDownClass(cls):
+        """Shut down the background test server if started by this class."""
+        if cls._server:
+            cls._server.shutdown()
+            cls._server = None
 
     def test_live_health_endpoint(self):
         """Live server responds to /api/health with status ok."""
