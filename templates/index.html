@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080c14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>SecurePass — Cyber Security &amp; Password Intelligence</title>
+  <meta name="description" content="Modern cybersecurity intelligence dashboard for password entropy evaluation, custom password generation, and privacy-preserving k-Anonymity breach detection.">
+  
+  <!-- Modern Clean Typography from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="/static/style.css" id="primaryStylesheet">
+  <script>
+    (function() {
+      // Auto-resolve relative static assets if opened directly via file:// or non-Flask servers
+      if (window.location.protocol === 'file:' || !window.location.host.includes('5000')) {
+        var s = document.getElementById('primaryStylesheet');
+        if (s) {
+          s.href = window.location.pathname.indexOf('templates') !== -1 ? '../static/style.css' : 'static/style.css';
+        }
+      }
+    })();
+  </script>
+</head>
+<body class="cyber-clean-theme">
+  <!-- Overflow-contained background glow accents to prevent mobile horizontal widening -->
+  <div class="ambient-glow-wrapper" aria-hidden="true">
+    <div class="ambient-glow glow-cyan"></div>
+    <div class="ambient-glow glow-blue"></div>
+  </div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-shield" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <polyline points="9 12 11 14 15 10"></polyline>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-row">
+            <span class="brand-name">Secure<span class="accent-text">Pass</span></span>
+            <span class="brand-badge">CYBER INTEL</span>
+          </div>
+          <span class="brand-tagline">CHECK. SECURE. STAY SAFE.</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="privacy-pill" title="Passwords are never stored, logged, or sent unhashed">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>k-Anonymity Verified</span>
+        </div>
+
+        <div class="backend-status-pill" id="backendStatusPill" title="Connection status with backend">
+          <span class="status-dot waiting" id="backendStatusDot"></span>
+          <span class="status-label" id="backendStatusText">Connecting...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN SECTION: Password Analyzer Card -->
+    <main class="panel panel-analyzer" aria-labelledby="analyzer-heading">
+      <div class="panel-header-simple">
+        <div class="header-copy">
+          <div class="hero-badge-pill">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span>Better Passwords. Safer You.</span>
+          </div>
+          <h1 id="analyzer-heading" class="panel-title">Password Security &amp; Breach Risk Checker</h1>
+          <p class="panel-desc">Check if your password is strong and if it has been exposed in known data breaches. Protect your accounts and stay one step ahead of cyber threats.</p>
+        </div>
+        <span class="char-counter-tag" id="inputStatsBadge">
+          <span id="charCount">0</span> chars &bull; <span id="uniqueCount">0</span> unique
+        </span>
+      </div>
+
+      <!-- Main Input Box with Integrated Action -->
+      <div class="input-form-block">
+        <div class="input-container" id="inputContainer">
+          <div class="input-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <input 
+            type="password" 
+            id="passwordInput" 
+            class="password-input" 
+            placeholder="Enter your password (or paste to test)..."
+            autocomplete="off" 
+            autocapitalize="off" 
+            spellcheck="false"
+          />
+          <div class="input-button-group">
+            <button type="button" id="togglePasswordBtn" class="btn-toggle-eye" aria-label="Show or hide password">SHOW</button>
+            <button type="button" id="clearPasswordBtn" class="btn-clear-input" aria-label="Clear input" title="Clear input">✕</button>
+          </div>
+        </div>
+
+        <button type="button" id="analyzeBtn" class="btn-primary-action">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <span>Check</span>
+        </button>
+      </div>
+
+      <!-- Trust & Zero-Knowledge Disclaimer -->
+      <div class="privacy-guarantee-note">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>We do not store your password. It is checked securely using trusted breach databases (e.g., Have I Been Pwned).</span>
+      </div>
+
+      <!-- Presets & Test Samples -->
+      <div class="input-footer-row">
+        <div class="sample-chips-group">
+          <span class="sample-label">TEST SAMPLES:</span>
+          <div class="sample-chips">
+            <button type="button" class="sample-chip weak" data-sample="123456" title="Weak: 123456">123456</button>
+            <button type="button" class="sample-chip weak" data-sample="password123" title="Common: password">password</button>
+            <button type="button" class="sample-chip weak" data-sample="admin2026!" title="Default: admin2026!">admin2026!</button>
+            <button type="button" class="sample-chip moderate" data-sample="BlueSky99!" title="Moderate: BlueSky99!">BlueSky99!</button>
+            <button type="button" class="sample-chip strong" data-sample="Solar#Flare$Cascade88" title="Strong: Solar#Flare$Cascade88">Solar#Flare</button>
+            <button type="button" class="sample-chip strong" data-sample="Correct-Horse-Battery-Staple-2026!" title="Passphrase">Passphrase</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Intelligence Report Divider -->
+      <div class="section-intel-banner">
+        <span class="intel-banner-line"></span>
+        <span class="intel-banner-text">SECURITY INTELLIGENCE REPORT</span>
+        <span class="intel-banner-line"></span>
+      </div>
+
+      <!-- 2-Column Results Grid -->
+      <div class="analyzer-results-grid">
+        <!-- Left Sub-card: Strength, Checklist, Telemetry & Recommendations -->
+        <div class="result-subpanel">
+          <div class="subpanel-header">
+            <span class="subpanel-title">STRENGTH EVALUATION</span>
+            <span class="score-badge default" id="scoreRatingBadge">Not analyzed</span>
+          </div>
+
+          <!-- Score Row -->
+          <div class="score-overview-box">
+            <div class="score-number-col">
+              <div class="score-digits">
+                <span class="score-value" id="scoreValue">--</span>
+                <span class="score-max">/100</span>
+              </div>
+              <span class="score-caption">Security Score</span>
+            </div>
+
+            <div class="score-bar-col">
+              <div class="progress-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" id="progressTrack">
+                <div class="progress-fill" id="progressFill"></div>
+              </div>
+              <p class="score-feedback" id="scoreFeedback">Enter a password above to view its strength evaluation.</p>
+            </div>
+          </div>
+
+          <!-- Complexity Checklist -->
+          <div class="requirements-box">
+            <div class="requirements-heading-row">
+              <span class="req-title">COMPLEXITY CRITERIA</span>
+              <span class="counter-badge" id="checklistCounter">0/5 Passed</span>
+            </div>
+
+            <ul class="checklist" id="checklist">
+              <li class="checklist-item" id="check-length" data-rule="length">
+                <span class="check-circle" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </span>
+                <span class="check-text">At least 12 characters (16+ recommended)</span>
+              </li>
+              <li class="checklist-item" id="check-uppercase" data-rule="uppercase">
+                <span class="check-circle" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </span>
+                <span class="check-text">Uppercase letter (A–Z)</span>
+              </li>
+              <li class="checklist-item" id="check-lowercase" data-rule="lowercase">
+                <span class="check-circle" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </span>
+                <span class="check-text">Lowercase letter (a–z)</span>
+              </li>
+              <li class="checklist-item" id="check-number" data-rule="number">
+                <span class="check-circle" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </span>
+                <span class="check-text">Numerical digit (0–9)</span>
+              </li>
+              <li class="checklist-item" id="check-special" data-rule="special">
+                <span class="check-circle" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </span>
+                <span class="check-text">Special character (!@#$%^&*...)</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Entropy & Keyspace Telemetry Strip -->
+          <div class="entropy-metrics-strip">
+            <div class="entropy-col">
+              <span class="req-title">SHANNON ENTROPY</span>
+              <div class="entropy-val-row">
+                <span class="entropy-number" id="entropyValue">0.0</span>
+                <span class="entropy-unit">bits</span>
+              </div>
+              <div class="entropy-mini-track">
+                <div class="entropy-mini-fill" id="entropyFill" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="entropy-col">
+              <span class="req-title">KEYSPACE POOL</span>
+              <div class="entropy-val-row">
+                <span class="entropy-number" id="poolSizeValue">0</span>
+                <span class="entropy-unit">charset</span>
+              </div>
+              <span class="entropy-subtext" id="combinationsValue" style="display: none;">0</span>
+              <span class="entropy-subtext">Active character space</span>
+            </div>
+          </div>
+
+          <!-- Recommendations Box -->
+          <div class="recommendations-box">
+            <span class="req-title">SECURITY RECOMMENDATIONS</span>
+            <div class="recommendations-container" id="recommendationsContainer">
+              <div class="recommendations-prompt" id="recommendationsPrompt">
+                <span>Enter a password to view personalized security recommendations.</span>
+              </div>
+              <div class="recommendations-status-box" id="recommendationsStatusBox">
+                Ready for analysis.
+              </div>
+              <ul class="recommendations-list" id="recommendationsList" style="display: none;">
+                <!-- Dynamically populated -->
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Sub-card: Breach & Attack Intelligence -->
+        <div class="result-subpanel">
+          <div class="subpanel-header">
+            <span class="subpanel-title">BREACH &amp; THREAT INTELLIGENCE</span>
+            <span class="badge-status" id="breachBadge">Not checked</span>
+          </div>
+
+          <!-- Breach Result Box -->
+          <div class="breach-status-card">
+            <div class="radar-wrapper" id="radarWrapper" aria-hidden="true">
+              <div class="radar-circle ring-1"></div>
+              <div class="radar-circle ring-2"></div>
+              <div class="radar-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+              </div>
+            </div>
+
+            <div class="breach-status-info">
+              <h3 class="breach-status-title" id="breachStatusTitle">Exposure status unknown</h3>
+              <p class="breach-status-desc" id="breachStatusDesc">Check against public data breach records via Have I Been Pwned.</p>
+            </div>
+          </div>
+
+          <!-- Occurrences Metric -->
+          <div class="occurrences-metric-row">
+            <div class="occurrences-content">
+              <span class="occurrences-label">PUBLIC COMPROMISES</span>
+              <span class="occurrences-count" id="occurrencesCount">—</span>
+            </div>
+            <button type="button" id="retryBreachBtn" class="btn-ghost-retry">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              <span>Re-check</span>
+            </button>
+          </div>
+          <p class="occurrences-subtext" id="occurrencesSubtext">No breach lookup has been performed yet.</p>
+
+          <!-- Cracking Time Estimation -->
+          <div class="crack-time-card">
+            <span class="req-title">ESTIMATED TIME TO CRACK</span>
+            <div class="crack-time-grid">
+              <div class="crack-item">
+                <span class="crack-label">Web Login (Rate-limited)</span>
+                <span class="crack-value" id="crackOnline">Instant</span>
+              </div>
+              <div class="crack-item">
+                <span class="crack-label">Offline CPU (Argon2)</span>
+                <span class="crack-value" id="crackOffline">Instant</span>
+              </div>
+              <div class="crack-item">
+                <span class="crack-label">Consumer GPU (RTX 4090)</span>
+                <span class="crack-value" id="crackSingleGpu">Instant</span>
+              </div>
+              <div class="crack-item">
+                <span class="crack-label">Distributed Supercomputer</span>
+                <span class="crack-value" id="crackCluster">Instant</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- k-Anonymity Privacy Guarantee Box -->
+          <div class="privacy-notice-box">
+            <div class="notice-header">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>Zero-Knowledge k-Anonymity Architecture</span>
+            </div>
+            <p class="notice-text">
+              Your password never leaves your browser. Only the first 5 characters of its SHA-1 hash are sent to the API (<span class="hash-preview" id="sha1PrefixHex">-----</span>). The remaining 35 characters (<span class="hash-preview" id="sha1SuffixHex">-----------------------------------</span>) are matched strictly locally on your machine.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- SECTION 2: Clean Custom Password Generator -->
+    <section class="panel panel-generator" aria-labelledby="generator-heading">
+      <div class="panel-header-simple">
+        <div class="header-copy">
+          <div class="title-with-pill">
+            <h2 id="generator-heading" class="panel-title">Smart Password Generator</h2>
+            <span class="gen-entropy-badge" id="genEntropyTag">~95 bits entropy</span>
+          </div>
+          <p class="panel-desc">Generate strong, high-entropy passwords tailored to your requirements.</p>
+        </div>
+      </div>
+
+      <!-- Generator Mode Selector Tabs -->
+      <div class="generator-type-tabs" role="tablist">
+        <button type="button" class="btn-gen-mode active" data-mode="passphrase" role="tab" aria-selected="true">
+          <span>📝 Memorable Passphrase</span>
+        </button>
+        <button type="button" class="btn-gen-mode" data-mode="alphanumeric" role="tab" aria-selected="false">
+          <span>🔑 Custom Alphanumeric</span>
+        </button>
+        <button type="button" class="btn-gen-mode" data-mode="quantum" role="tab" aria-selected="false">
+          <span>⚡ Quantum Resistant (32c)</span>
+        </button>
+        <button type="button" class="btn-gen-mode" data-mode="hex" role="tab" aria-selected="false">
+          <span>🔢 Hex Token</span>
+        </button>
+      </div>
+
+      <!-- Generator Output Box -->
+      <div class="generator-display-card">
+        <div class="gen-token-box" id="generatedCipher">Correct-Horse-Battery-Staple-2026!</div>
+        <div class="gen-buttons-row">
+          <button type="button" id="regenerateBtn" class="btn-gen-secondary" title="Generate another password">
+            <span>🔄 Re-roll</span>
+          </button>
+          <button type="button" id="copyGeneratedBtn" class="btn-gen-secondary" title="Copy to clipboard">
+            <span id="copyText">📋 Copy</span>
+          </button>
+          <button type="button" id="deployGeneratedBtn" class="btn-gen-primary" title="Insert into analyzer above">
+            <span>⚡ Test in Analyzer</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <span class="footer-brand">SecurePass</span> &bull; Privacy-first password intelligence
+      </div>
+      <div class="footer-right">
+        Zero persistent storage &bull; Zero raw credential transmission &bull; k-Anonymity Verified
+      </div>
+    </footer>
+  </div>
+
+  <!-- Application Logic -->
+  <script src="/static/app.js" id="primaryScript"></script>
+  <script>
+    (function() {
+      if (window.location.protocol === 'file:' || !window.location.host.includes('5000')) {
+        if (!window.SecurePassInitialized) {
+          var s = document.createElement('script');
+          s.src = window.location.pathname.indexOf('templates') !== -1 ? '../static/app.js' : 'static/app.js';
+          document.body.appendChild(s);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
